@@ -35,10 +35,15 @@ end)
 -- Log M+ Run if criteria met
 function GuildMPlus:LogRun()
     local mapID, level, time, onTime, _, _, _, members = C_ChallengeMode.GetChallengeCompletionInfo()
-    print("M+ Run Detected!")  -- Debug message
+    print("M+ Run Detected!")
 
     if not onTime then
         print("Run was not in time. Ignoring.")
+        return
+    end
+
+    if not members then  -- Simple safety check
+        print("Error: Unable to retrieve run members. Exiting.")
         return
     end
 
@@ -89,18 +94,18 @@ local function ShowLeaderboard()
     frame.title = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     frame.title:SetPoint("TOP", frame, "TOP", 0, -10)
     frame.title:SetText("Guild M+ Leaderboard")
-    
+
     local sortedRuns = {} -- Sort by points
     for _, run in ipairs(db.runs) do
         table.insert(sortedRuns, run)
     end
     table.sort(sortedRuns, function(a, b) return a.points > b.points end)
-    
+
     local text = ""
     for i, run in ipairs(sortedRuns) do
         text = text .. i .. ". " .. run.members[1] .. " - " .. run.points .. "pts\n"
     end
-    
+
     local leaderboardText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     leaderboardText:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -40)
     leaderboardText:SetText(text)
