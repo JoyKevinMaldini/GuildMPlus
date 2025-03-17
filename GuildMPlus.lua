@@ -8,20 +8,33 @@ GuildMPlusDB = GuildMPlusDB or {}
 db = GuildMPlusDB
 
 -- Event Handling
-GuildMPlus:RegisterEvent("CHALLENGE_MODE_COMPLETED")
 GuildMPlus:RegisterEvent("PLAYER_LOGIN")
+GuildMPlus:RegisterEvent("CHALLENGE_MODE_COMPLETED")
+GuildMPlus:RegisterEvent("CHALLENGE_MODE_START")
+GuildMPlus:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 
 GuildMPlus:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
+        print("|cFF00FF00[GuildM+] Addon Loaded!|r")  -- Green message to confirm addon load
         if not db.runs then db.runs = {} end
+
+    elseif event == "CHALLENGE_MODE_START" then
+        print("|cFFFFA500[GuildM+] M+ Timer Started!|r")  -- Orange message when M+ starts
+
     elseif event == "CHALLENGE_MODE_COMPLETED" then
         GuildMPlus:LogRun()
+
+    elseif event == "ZONE_CHANGED_NEW_AREA" then
+        local inInstance, instanceType = IsInInstance()
+        if inInstance and instanceType == "party" then
+            print("|cFFFFA500[GuildM+] Entered Dungeon.|r")
+        end
     end
 end)
 
 -- Log M+ Run if criteria met
 function GuildMPlus:LogRun()
-    local mapID, level, time, onTime, _, _, _, members = C_ChallengeMode.GetCompletionInfo()
+    local mapID, level, time, onTime, _, _, _, members = C_ChallengeMode.GetChallengeCompletionInfo()
     print("M+ Run Detected!")  -- Debug message
 
     if not onTime then
