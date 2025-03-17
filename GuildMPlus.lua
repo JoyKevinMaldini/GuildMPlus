@@ -34,19 +34,36 @@ end)
 
 -- Log M+ Run if criteria met
 function GuildMPlus:LogRun()
-    local mapID, level, time, onTime, _, _, _, members = C_ChallengeMode.GetChallengeCompletionInfo()
+    local mapID, level, time, onTime, oldOverallDungeonScore, newOverallDungeonScore, isMapRecord, isAffixRecord, primaryAffix, isEligibleForScore, members = C_ChallengeMode.GetChallengeCompletionInfo()
+
+    -- Debugging: Print all returned values
     print("M+ Run Detected!")
+    print("mapID:", mapID)
+    print("level:", level)
+    print("time:", time)
+    print("onTime:", onTime)
+    print("oldOverallDungeonScore:", oldOverallDungeonScore)
+    print("newOverallDungeonScore:", newOverallDungeonScore)
+    print("isMapRecord:", isMapRecord)
+    print("isAffixRecord:", isAffixRecord)
+    print("primaryAffix:", primaryAffix)
+    print("isEligibleForScore:", isEligibleForScore)
+    print("members:", members)
 
+    -- Check what `onTime` actually contains
+    if type(onTime) ~= "boolean" then
+        print("|cFFFF0000[GuildM+] Warning: `onTime` is not a boolean! Check API changes.|r")
+    end
+
+    -- Temporary fix: Treat anything non-nil and non-false as true
     if not onTime then
-        print("Run was not in time. Ignoring.")
+        print("|cFFFF0000[GuildM+] Run was NOT in time according to API.|r")
         return
     end
 
-    if not members then  -- Simple safety check
-        print("Error: Unable to retrieve run members. Exiting.")
-        return
-    end
+    print("|cFF00FF00[GuildM+] Run was completed in time!|r")
 
+    -- Proceed with normal logging...
     local playerGuild = GetGuildInfo("player")
     print("Player's Guild: ", playerGuild)
 
