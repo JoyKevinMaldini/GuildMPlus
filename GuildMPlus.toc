@@ -1,0 +1,9 @@
+## Interface: 110005  # WoW version (adjust if needed)
+## Title: Guild M+ Leaderboard
+## Author: Joy-Kevin Maldini
+## Version: 0.1
+## Notes: Tracks WoW Mythic+ runs with guild members and ranks players.
+## SavedVariables: GuildMPlusDB
+## Dependencies:
+
+GuildMPlus.lua
