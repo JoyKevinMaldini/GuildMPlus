@@ -34,28 +34,28 @@ end)
 
 -- Log M+ Run if criteria met
 function GuildMPlus:LogRun()
-    local mapID, level, time, onTime, oldOverallDungeonScore, newOverallDungeonScore, isMapRecord, isAffixRecord, primaryAffix, isEligibleForScore, members = C_ChallengeMode.GetChallengeCompletionInfo()
+    local runData = C_ChallengeMode.GetChallengeCompletionInfo()  -- Now returns a table
 
-    -- Debugging: Print all returned values
+    if type(runData) ~= "table" then
+        print("|cFFFF0000[GuildM+] Error: Unexpected return type from API. Exiting.|r")
+        return
+    end
+
+    -- Extract values from the returned table
+    local mapID = runData.mapChallengeModeID
+    local level = runData.level
+    local time = runData.time
+    local onTime = runData.onTime  -- New field for in-time completion
+    local members = runData.members
+
     print("M+ Run Detected!")
     print("mapID:", mapID)
     print("level:", level)
     print("time:", time)
     print("onTime:", onTime)
-    print("oldOverallDungeonScore:", oldOverallDungeonScore)
-    print("newOverallDungeonScore:", newOverallDungeonScore)
-    print("isMapRecord:", isMapRecord)
-    print("isAffixRecord:", isAffixRecord)
-    print("primaryAffix:", primaryAffix)
-    print("isEligibleForScore:", isEligibleForScore)
     print("members:", members)
 
-    -- Check what `onTime` actually contains
-    if type(onTime) ~= "boolean" then
-        print("|cFFFF0000[GuildM+] Warning: `onTime` is not a boolean! Check API changes.|r")
-    end
-
-    -- Temporary fix: Treat anything non-nil and non-false as true
+    -- Check if the run was completed in time
     if not onTime then
         print("|cFFFF0000[GuildM+] Run was NOT in time according to API.|r")
         return
@@ -63,10 +63,14 @@ function GuildMPlus:LogRun()
 
     print("|cFF00FF00[GuildM+] Run was completed in time!|r")
 
-    -- Proceed with normal logging...
-    local playerGuild = GetGuildInfo("player")
-    print("Player's Guild: ", playerGuild)
+    -- Ensure members exist
+    if not members or type(members) ~= "table" then
+        print("Error: Unable to retrieve run members. Exiting.")
+        return
+    end
 
+    -- Guild check
+    local playerGuild = GetGuildInfo("player")
     if not playerGuild then
         print("Player is not in a guild. Exiting.")
         return
@@ -74,14 +78,9 @@ function GuildMPlus:LogRun()
 
     local guildMembersInRun = {}
     for _, memberInfo in ipairs(members) do
-        local fullName = memberInfo.name  -- Includes realm (e.g., "Player-Realm")
-        print("Checking party member: ", fullName)
-
+        local fullName = memberInfo.name
         if C_GuildInfo.IsGuildMember(fullName) then
-            print("Guild member detected: ", fullName)
             table.insert(guildMembersInRun, fullName)
-        else
-            print(fullName .. " is NOT a guild member.")
         end
     end
 
@@ -90,7 +89,7 @@ function GuildMPlus:LogRun()
         return
     end
 
-    print("Logging run to database...")
+    -- Log the run
     table.insert(GuildMPlusDB.runs, {
         dungeon = C_ChallengeMode.GetMapUIInfo(mapID),
         level = level,
