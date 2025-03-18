@@ -5,6 +5,7 @@ local db
 
 -- SavedVariables setup
 GuildMPlusDB = GuildMPlusDB or {}
+GuildMPlusDB.runs = GuildMPlusDB.runs or {}  -- Ensure runs table exists
 db = GuildMPlusDB
 
 -- Event Handling
@@ -15,10 +16,11 @@ GuildMPlus:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 
 GuildMPlus:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
+        print("|cFF00FFFF[GuildM+] Addon Loaded!|r")
         if not db.runs then db.runs = {} end
 
     elseif event == "CHALLENGE_MODE_START" then
-        print("|cFFFFA500[GuildM+] M+ Timer Started!|r")  -- Orange message when M+ starts
+        print("|cFFFFA500[GuildM+] M+ Timer Started!|r")
 
     elseif event == "CHALLENGE_MODE_COMPLETED" then
         GuildMPlus:LogRun()
@@ -30,45 +32,39 @@ GuildMPlus:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 
--- Log M+ Run if criteria met
+-- Log M+ Run
 function GuildMPlus:LogRun()
-    local runData = C_ChallengeMode.GetChallengeCompletionInfo()  -- Now returns a table
+    print("|cFF00FFFF[GuildM+] Attempting to log run...|r")
+
+    local runData = C_ChallengeMode.GetChallengeCompletionInfo()
 
     if type(runData) ~= "table" then
-        print("|cFFFF0000[GuildM+] Error: Unexpected return type from API. Exiting.|r")
+        print("|cFFFF0000[GuildM+] Error: Unexpected return type from API.|r")
         return
     end
 
-    -- Extract values from the returned table
+    -- Extract values
     local mapID = runData.mapChallengeModeID
     local level = runData.level
     local time = runData.time
-    local onTime = runData.onTime  -- New field for in-time completion
+    local onTime = runData.onTime
     local members = runData.members
-
-    -- Check if the run was completed in time
-    if not onTime then
-        print("|cFFFF0000[GuildM+] Run was NOT in time according to API.|r")
-        return
-    end
-
-    print("|cFF00FF00[GuildM+] Run was completed in time!|r")
 
     -- Ensure members exist
     if not members or type(members) ~= "table" then
-        print("Error: Unable to retrieve run members. Exiting.")
+        print("|cFFFF0000[GuildM+] Error: Unable to retrieve run members.|r")
         return
     end
 
     -- Guild check
     local playerGuild = GetGuildInfo("player")
     if not playerGuild then
-        print("Player is not in a guild. Exiting.")
+        print("|cFFFF0000[GuildM+] Player is not in a guild. Exiting.|r")
         return
     end
 
     local guildMembersInRun = {}
-    C_GuildInfo.GuildRoster() -- Ensure the guild roster is updated
+    C_GuildInfo.GuildRoster()  -- Ensure the guild roster is updated
 
     for _, memberInfo in ipairs(members) do
         local fullName = memberInfo.name
@@ -79,21 +75,34 @@ function GuildMPlus:LogRun()
     end
 
     if #guildMembersInRun == 0 then
-        print("No guild members found in the run. Exiting.")
+        print("|cFFFF0000[GuildM+] No guild members found in the run. Exiting.|r")
         return
     end
 
+    -- Determine points (0 if not in-time)
+    local points = onTime and (level * 10) or 0
+    if onTime then
+        print("|cFF00FF00[GuildM+] Run was completed in time!|r")
+    else
+        print("|cFFFF0000[GuildM+] Run was NOT in time.|r")
+    end
+
     -- Log the run
-    table.insert(GuildMPlusDB.runs, {
+    table.insert(db.runs, {
         dungeon = C_ChallengeMode.GetMapUIInfo(mapID),
         level = level,
         time = time,
         date = date("%Y-%m-%d %H:%M:%S"),
         members = guildMembersInRun,
-        points = level * 10
+        points = points
     })
 
-    print("Run successfully logged!")
+    print("|cFF00FF00[GuildM+] Run successfully logged!|r")
+
+    -- Force SavedVariables update for debugging
+    if IsAddOnLoaded("Blizzard_DebugTools") then
+        print("|cFFFFA500[GuildM+] SavedVariables file updated. You may need to /reload.|r")
+    end
 end
 
 -- Leaderboard UI
