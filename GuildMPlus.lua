@@ -15,7 +15,6 @@ GuildMPlus:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 
 GuildMPlus:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
-        print("|cFF00FF00[GuildM+] Addon Loaded!|r")  -- Green message to confirm addon load
         if not db.runs then db.runs = {} end
 
     elseif event == "CHALLENGE_MODE_START" then
@@ -27,7 +26,6 @@ GuildMPlus:SetScript("OnEvent", function(self, event, ...)
     elseif event == "ZONE_CHANGED_NEW_AREA" then
         local inInstance, instanceType = IsInInstance()
         if inInstance and instanceType == "party" then
-            print("|cFFFFA500[GuildM+] Entered Dungeon.|r")
         end
     end
 end)
@@ -47,13 +45,6 @@ function GuildMPlus:LogRun()
     local time = runData.time
     local onTime = runData.onTime  -- New field for in-time completion
     local members = runData.members
-
-    print("M+ Run Detected!")
-    print("mapID:", mapID)
-    print("level:", level)
-    print("time:", time)
-    print("onTime:", onTime)
-    print("members:", members)
 
     -- Check if the run was completed in time
     if not onTime then
@@ -77,9 +68,12 @@ function GuildMPlus:LogRun()
     end
 
     local guildMembersInRun = {}
+    C_GuildInfo.GuildRoster() -- Ensure the guild roster is updated
+
     for _, memberInfo in ipairs(members) do
         local fullName = memberInfo.name
-        if C_GuildInfo.IsGuildMember(fullName) then
+        local guildName = GetGuildInfo(fullName)
+        if guildName == playerGuild then
             table.insert(guildMembersInRun, fullName)
         end
     end
