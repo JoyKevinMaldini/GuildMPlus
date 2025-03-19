@@ -108,21 +108,35 @@ local function ShowLeaderboard()
     frame.title:SetPoint("TOP", frame, "TOP", 0, -10)
     frame.title:SetText("Guild M+ Leaderboard")
 
-    local sortedRuns = {} -- Sort by points
-    for _, run in ipairs(GuildMPlusDB.runs) do
-        table.insert(sortedRuns, run)
-    end
-    table.sort(sortedRuns, function(a, b) return a.points > b.points end)
+    -- Aggregate points per player
+    local playerPoints = {}
 
+    for _, run in ipairs(GuildMPlusDB.runs) do
+        for _, player in ipairs(run.members) do
+            playerPoints[player] = (playerPoints[player] or 0) + run.points
+        end
+    end
+
+    -- Convert to sortable table
+    local sortedPlayers = {}
+    for player, points in pairs(playerPoints) do
+        table.insert(sortedPlayers, { name = player, points = points })
+    end
+
+    -- Sort by points (descending)
+    table.sort(sortedPlayers, function(a, b) return a.points > b.points end)
+
+    -- Build leaderboard text
     local text = ""
-    for i, run in ipairs(sortedRuns) do
-        text = text .. i .. ". " .. run.members[1] .. " - " .. run.points .. "pts\n"
+    for i, entry in ipairs(sortedPlayers) do
+        text = text .. i .. ". " .. entry.name .. " - " .. entry.points .. "pts\n"
     end
 
     local leaderboardText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     leaderboardText:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -40)
     leaderboardText:SetText(text)
 end
+
 
 SLASH_GMPLUS1 = "/gmplus"
 SlashCmdList["GMPLUS"] = ShowLeaderboard
