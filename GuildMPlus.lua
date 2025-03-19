@@ -1,12 +1,14 @@
 -- Guild M+ Leaderboard Addon
 local addonName, addonTable = ...
 local GuildMPlus = CreateFrame("Frame")
-local db
 
--- SavedVariables setup
-GuildMPlusDB = GuildMPlusDB or {}
-GuildMPlusDB.runs = GuildMPlusDB.runs or {}  -- Ensure runs table exists
-db = GuildMPlusDB
+-- Ensure SavedVariables persist properly
+if not GuildMPlusDB then
+    GuildMPlusDB = { runs = {} }
+end
+if not GuildMPlusDB.runs then
+    GuildMPlusDB.runs = {}
+end
 
 -- Event Handling
 GuildMPlus:RegisterEvent("PLAYER_LOGIN")
@@ -17,18 +19,9 @@ GuildMPlus:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 GuildMPlus:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
         print("|cFF00FFFF[GuildM+] Addon Loaded!|r")
-        if not db.runs then db.runs = {} end
-
-    elseif event == "CHALLENGE_MODE_START" then
-        print("|cFFFFA500[GuildM+] M+ Timer Started!|r")
-
+        print("|cFFFFA500[GuildM+] Stored Runs:|r", #GuildMPlusDB.runs) -- Debugging persistence
     elseif event == "CHALLENGE_MODE_COMPLETED" then
         GuildMPlus:LogRun()
-
-    elseif event == "ZONE_CHANGED_NEW_AREA" then
-        local inInstance, instanceType = IsInInstance()
-        if inInstance and instanceType == "party" then
-        end
     end
 end)
 
@@ -63,6 +56,7 @@ function GuildMPlus:LogRun()
         return
     end
 
+    local playerName = UnitFullName("player") -- Get the player's full name
     local guildMembersInRun = {}
     C_GuildInfo.GuildRoster()  -- Ensure the guild roster is updated
 
@@ -72,6 +66,11 @@ function GuildMPlus:LogRun()
         if guildName == playerGuild then
             table.insert(guildMembersInRun, fullName)
         end
+    end
+
+    -- Ensure the player is in the list
+    if not tContains(guildMembersInRun, playerName) then
+        table.insert(guildMembersInRun, playerName)
     end
 
     if #guildMembersInRun == 0 then
@@ -88,7 +87,7 @@ function GuildMPlus:LogRun()
     end
 
     -- Log the run
-    table.insert(db.runs, {
+    table.insert(GuildMPlusDB.runs, {
         dungeon = C_ChallengeMode.GetMapUIInfo(mapID),
         level = level,
         time = time,
@@ -98,11 +97,6 @@ function GuildMPlus:LogRun()
     })
 
     print("|cFF00FF00[GuildM+] Run successfully logged!|r")
-
-    -- Force SavedVariables update for debugging
-    if IsAddOnLoaded("Blizzard_DebugTools") then
-        print("|cFFFFA500[GuildM+] SavedVariables file updated. You may need to /reload.|r")
-    end
 end
 
 -- Leaderboard UI
@@ -115,7 +109,7 @@ local function ShowLeaderboard()
     frame.title:SetText("Guild M+ Leaderboard")
 
     local sortedRuns = {} -- Sort by points
-    for _, run in ipairs(db.runs) do
+    for _, run in ipairs(GuildMPlusDB.runs) do
         table.insert(sortedRuns, run)
     end
     table.sort(sortedRuns, function(a, b) return a.points > b.points end)
