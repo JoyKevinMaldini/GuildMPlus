@@ -73,18 +73,15 @@ function GuildMPlus:LogRun()
         table.insert(guildMembersInRun, playerName)
     end
 
-    if #guildMembersInRun == 0 then
-        print("|cFFFF0000[GuildM+] No guild members found in the run. Exiting.|r")
+    -- ✅ Requirement: At least 3 guild members in the run (including the player)
+    if #guildMembersInRun < 3 then
+        print("|cFFFF0000[GuildM+] Not enough guild members in the run. No points awarded.|r")
         return
     end
 
-    -- Determine points (0 if not in-time)
-    local points = onTime and (level * 10) or 0
-    if onTime then
-        print("|cFF00FF00[GuildM+] Run was completed in time!|r")
-    else
-        print("|cFFFF0000[GuildM+] Run was NOT in time.|r")
-    end
+    -- ✅ Points calculation: Key Level * Number of Guild Members in the run
+    local points = level * #guildMembersInRun
+    print("|cFF00FF00[GuildM+] Points Awarded: " .. points .. " (Key Level: " .. level .. " * Guild Members: " .. #guildMembersInRun .. ")|r")
 
     -- Log the run
     table.insert(GuildMPlusDB.runs, {
