@@ -31,7 +31,7 @@ C_ChatInfo.RegisterAddonMessagePrefix(ADDON_PREFIX)
 function GuildMPlus:LogRun()
     print("|cFF00FFFF[GuildM+] Attempting to log run...|r")
 
-    local runData = C_ChallengeMode.GetCompletionInfo()
+    local runData = C_ChallengeMode.GetChallengeCompletionInfo()
 
     if type(runData) ~= "table" then
         print("|cFFFF0000[GuildM+] Error: Unexpected return type from API.|r")
