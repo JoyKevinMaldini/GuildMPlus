@@ -32,6 +32,7 @@ function GuildMPlus:LogRun()
     print("|cFF00FFFF[GuildM+] Attempting to log run...|r")
 
     local runData = C_ChallengeMode.GetCompletionInfo()
+
     if type(runData) ~= "table" then
         print("|cFFFF0000[GuildM+] Error: Unexpected return type from API.|r")
         return
@@ -111,4 +112,101 @@ function GuildMPlus:LogRun()
     addonTable.Sync:BroadcastLeaderboard()
 
     print("|cFF00FF00[GuildM+] Run successfully logged!|r")
+end
+
+-- 🏆 Add Sample Run for Testing (with Randomization)
+function GuildMPlus:AddSampleRun()
+    print("|cFF00FFFF[GuildM+] Adding sample run for testing...|r")
+
+    -- Predefined list of fake player names
+    local fakePlayerNames = {
+        UnitName("player"), "Player1", "Player2", "Player3", "Player4", "Player5", "Player6", "Player7", "Player8"
+    }
+
+    -- Predefined list of dungeon names
+    local dungeons = {
+        "De Other Side", "Spire of Ascension", "Sanguine Depths", "The Necrotic Wake", "Theater of Pain"
+    }
+
+    -- Randomizing helper functions
+    local function getRandomElement(list)
+        return list[math.random(#list)]
+    end
+
+    local function getRandomTime()
+        return math.random(10000000, 20000000) -- Simulated run time
+    end
+
+    local function getRandomLevel()
+        return math.random(10, 25) -- Random key level between 10 and 25
+    end
+
+    local function getRandomDate()
+        -- Get the current server time
+        local currentTime = GetServerTime()
+
+        -- Generate a random time within the last 30 days
+        local randomTime = currentTime - math.random(1, 30) * 86400 -- 86400 is the number of seconds in a day
+
+        -- Convert it to a readable date string (like: "2025-04-06 13:40:25")
+        return date("%Y-%m-%d %H:%M:%S", randomTime)
+    end
+
+    -- Randomize the run data
+    local sampleDungeon = getRandomElement(dungeons)
+    local sampleLevel = getRandomLevel()
+    local sampleTime = getRandomTime()
+    local sampleMembers = {}
+
+    -- Randomize the members (include the player + 4 random names)
+    for j = 1, 5 do
+        table.insert(sampleMembers, getRandomElement(fakePlayerNames))
+    end
+
+    -- Generate a unique run ID
+    local runID = sampleDungeon .. "-" .. sampleLevel .. "-" .. sampleTime .. "-" .. table.concat(sampleMembers, ",")
+
+    -- Check if the run is already logged
+    local isLogged = false
+    for _, existingRun in ipairs(GuildMPlusDB.runs) do
+        if existingRun.id == runID then
+            isLogged = true
+            break
+        end
+    end
+
+    if isLogged then
+        print("|cFFFFA500[GuildM+] Sample run already logged (ID: " .. runID .. ").|r")
+        return
+    end
+
+    -- Points calculation (simulating based on level and number of members)
+    local points = sampleLevel * #sampleMembers
+    print("|cFF00FF00[GuildM+] Points Awarded: " .. points .. " (Level: " .. sampleLevel .. " * Members: " .. #sampleMembers .. ")|r")
+
+    -- Log the sample run
+    table.insert(GuildMPlusDB.runs, {
+        id = runID,
+        dungeon = sampleDungeon,
+        level = sampleLevel,
+        time = sampleTime,
+        date = getRandomDate(),
+        members = sampleMembers,
+        points = points
+    })
+
+    -- Update last synced time & broadcast
+    GuildMPlusDB.lastSynced = date("%Y-%m-%d %H:%M:%S")
+    addonTable.Sync:BroadcastLeaderboard()
+
+    -- Optional: Refresh UI after adding a sample run
+    addonTable.UI:ShowLeaderboard()
+
+    print("|cFF00FF00[GuildM+] Sample run successfully logged!|r")
+end
+
+-- Slash command for testing
+SLASH_ADDTESTRUN1 = "/addtestrun"
+SlashCmdList["ADDTESTRUN"] = function()
+    GuildMPlus:AddSampleRun()
 end

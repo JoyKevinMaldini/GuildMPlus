@@ -13,6 +13,10 @@ if not GuildMPlus then
     return
 end
 
+-- Load LibStub first (this is already automatically available in WoW)
+-- 📡 Load AceSerializer-3.0 using LibStub
+local AceSerializer = LibStub("AceSerializer-3.0")
+
 -- 📡 Register message prefix and event
 C_ChatInfo.RegisterAddonMessagePrefix(ADDON_PREFIX)
 GuildMPlus:RegisterEvent("CHAT_MSG_ADDON")
@@ -26,7 +30,7 @@ end)
 -- 📡 **Broadcast Leaderboard to Guild**
 function Sync:BroadcastLeaderboard()
     if not IsInGuild() then return end
-    local encodedData = LibStub("AceSerializer-3.0"):Serialize(GuildMPlusDB.runs)
+    local encodedData = AceSerializer:Serialize(GuildMPlusDB.runs)
     C_ChatInfo.SendAddonMessage(ADDON_PREFIX, encodedData, "GUILD")
 end
 
@@ -39,7 +43,7 @@ function Sync:OnAddonMessage(_, prefix, message, _, sender)
         return
     end
 
-    local success, receivedData = LibStub("AceSerializer-3.0"):Deserialize(message)
+    local success, receivedData = AceSerializer:Deserialize(message)
 
     if success and type(receivedData) == "table" then
         local addedRuns = 0

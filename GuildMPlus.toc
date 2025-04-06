@@ -5,6 +5,9 @@
 ## Notes: Tracks WoW Mythic+ runs with guild members and ranks players.
 ## SavedVariables: GuildMPlusDB
 
+Libs/LibStub/LibStub.lua
+Libs/Ace3/AceSerializer-3.0/AceSerializer-3.0.lua
+
 Core.lua
 Sync.lua
 UI.lua
