@@ -4,6 +4,8 @@ local GuildMPlus = CreateFrame("Frame")
 addonTable.GuildMPlus = GuildMPlus
 local ADDON_PREFIX = "GuildMPlus"
 
+print("|cFF00FFFF[GuildM+] Core module loaded.|r")
+
 -- ✅ Initialize database
 if not GuildMPlusDB then
     GuildMPlusDB = { runs = {}, lastSynced = "Never" }
@@ -12,7 +14,8 @@ end
 -- 📡 Register events
 GuildMPlus:RegisterEvent("PLAYER_LOGIN")
 GuildMPlus:RegisterEvent("CHALLENGE_MODE_COMPLETED")
-GuildMPlus:SetScript("OnEvent", function(self, event, ...)
+
+GuildMPlus:HookScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
         print("|cFF00FFFF[GuildM+] Addon Loaded!|r")
         print("|cFFFFA500[GuildM+] Last Sync:|r " .. GuildMPlusDB.lastSynced)
@@ -29,7 +32,6 @@ function GuildMPlus:LogRun()
     print("|cFF00FFFF[GuildM+] Attempting to log run...|r")
 
     local runData = C_ChallengeMode.GetCompletionInfo()
-
     if type(runData) ~= "table" then
         print("|cFFFF0000[GuildM+] Error: Unexpected return type from API.|r")
         return

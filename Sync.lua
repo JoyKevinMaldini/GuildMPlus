@@ -4,6 +4,25 @@ local Sync = {}
 addonTable.Sync = Sync
 local ADDON_PREFIX = "GuildMPlus"
 
+print("|cFF00FFFF[GuildM+] Sync module loaded.|r")
+
+-- 🧩 Get GuildMPlus frame from core
+local GuildMPlus = addonTable.GuildMPlus
+if not GuildMPlus then
+    print("|cFFFF0000[GuildM+] Sync error: Core module not loaded.|r")
+    return
+end
+
+-- 📡 Register message prefix and event
+C_ChatInfo.RegisterAddonMessagePrefix(ADDON_PREFIX)
+GuildMPlus:RegisterEvent("CHAT_MSG_ADDON")
+
+GuildMPlus:HookScript("OnEvent", function(self, event, ...)
+    if event == "CHAT_MSG_ADDON" then
+        Sync:OnAddonMessage(...)
+    end
+end)
+
 -- 📡 **Broadcast Leaderboard to Guild**
 function Sync:BroadcastLeaderboard()
     if not IsInGuild() then return end
@@ -45,11 +64,3 @@ function Sync:OnAddonMessage(_, prefix, message, _, sender)
         end
     end
 end
-
-C_ChatInfo.RegisterAddonMessagePrefix(ADDON_PREFIX)
-GuildMPlus:RegisterEvent("CHAT_MSG_ADDON")
-GuildMPlus:SetScript("OnEvent", function(self, event, ...)
-    if event == "CHAT_MSG_ADDON" then
-        Sync:OnAddonMessage(...)
-    end
-end)
