@@ -27,6 +27,19 @@ end)
 
 C_ChatInfo.RegisterAddonMessagePrefix(ADDON_PREFIX)
 
+-- 🔧 Helper: Normalize realm name (Need to be defined before use. Can't put at the end of file..?)
+local function NormalizeRealmName(realm)
+    return realm:gsub("[%s%-']", "")
+end
+
+-- 🔧 Helper: Normalize full name (Name-Realm) (Need to be defined before use. Can't put at the end of file..?)
+local function NormalizeFullName(fullName)
+    local name, realm = strsplit("-", fullName)
+    name = name or fullName
+    realm = realm or NormalizeRealmName(GetRealmName())
+    return name .. "-" .. NormalizeRealmName(realm)
+end
+
 -- 🏆 **Log M+ Run**
 function GuildMPlus:LogRun()
     print("|cFF00FFFF[GuildM+] Attempting to log run...|r")
@@ -213,19 +226,6 @@ function GuildMPlus:AddSampleRun()
     end
 
     print("|cFF00FF00[GuildM+] Sample run successfully logged!|r")
-end
-
--- 🔧 Helper: Normalize realm name
-local function NormalizeRealmName(realm)
-    return realm:gsub("[%s%-']", "")
-end
-
--- 🔧 Helper: Normalize full name (Name-Realm)
-local function NormalizeFullName(fullName)
-    local name, realm = strsplit("-", fullName)
-    name = name or fullName
-    realm = realm or NormalizeRealmName(GetRealmName())
-    return name .. "-" .. NormalizeRealmName(realm)
 end
 
 -- Slash command for testing
