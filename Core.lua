@@ -62,13 +62,25 @@ function GuildMPlus:LogRun()
 
     for i = 1, GetNumGuildMembers() do
         local name = GetGuildRosterInfo(i)
-        guildRoster[name] = true
+        if name then
+            guildRoster[NormalizeFullName(name)] = true
+        end
+    end
+
+    print("|cFFAAAAAA[GuildM+] Members in run:|r")
+    for _, memberInfo in ipairs(members) do
+        print(" - " .. memberInfo.name)
+    end
+
+    print("|cFFAAAAAA[GuildM+] Guild Roster:|r")
+    for name in pairs(guildRoster) do
+        print(" - " .. name)
     end
 
     -- Identify guild members in the run
     local guildMembersInRun = {}
     for _, memberInfo in ipairs(members) do
-        local fullName = memberInfo.name
+        local fullName = NormalizeFullName(memberInfo.name)
         if guildRoster[fullName] then
             table.insert(guildMembersInRun, fullName)
         end
@@ -158,26 +170,22 @@ function GuildMPlus:AddSampleRun()
     local sampleTime = getRandomTime()
     local sampleMembers = {}
 
-    -- Randomize the members (include the player + 4 random names)
-    for j = 1, 5 do
-        table.insert(sampleMembers, getRandomElement(fakePlayerNames))
+    local used = {}
+    while #sampleMembers < 5 do
+        local name = getRandomElement(fakePlayerNames)
+        if not used[name] then
+            table.insert(sampleMembers, name)
+            used[name] = true
+        end
     end
 
     -- Generate a unique run ID
     local runID = sampleDungeon .. "-" .. sampleLevel .. "-" .. sampleTime .. "-" .. table.concat(sampleMembers, ",")
-
-    -- Check if the run is already logged
-    local isLogged = false
     for _, existingRun in ipairs(GuildMPlusDB.runs) do
         if existingRun.id == runID then
-            isLogged = true
-            break
+            print("|cFFFFA500[GuildM+] Sample run already logged (ID: " .. runID .. ").|r")
+            return
         end
-    end
-
-    if isLogged then
-        print("|cFFFFA500[GuildM+] Sample run already logged (ID: " .. runID .. ").|r")
-        return
     end
 
     -- Points calculation (simulating based on level and number of members)
@@ -200,9 +208,24 @@ function GuildMPlus:AddSampleRun()
     addonTable.Sync:BroadcastLeaderboard()
 
     -- Optional: Refresh UI after adding a sample run
-    addonTable.UI:ShowLeaderboard()
+    if addonTable.UI and addonTable.UI.ShowLeaderboard then
+        addonTable.UI:ShowLeaderboard()
+    end
 
     print("|cFF00FF00[GuildM+] Sample run successfully logged!|r")
+end
+
+-- 🔧 Helper: Normalize realm name
+local function NormalizeRealmName(realm)
+    return realm:gsub("[%s%-']", "")
+end
+
+-- 🔧 Helper: Normalize full name (Name-Realm)
+local function NormalizeFullName(fullName)
+    local name, realm = strsplit("-", fullName)
+    name = name or fullName
+    realm = realm or NormalizeRealmName(GetRealmName())
+    return name .. "-" .. NormalizeRealmName(realm)
 end
 
 -- Slash command for testing
