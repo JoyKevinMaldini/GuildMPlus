@@ -29,15 +29,19 @@ C_ChatInfo.RegisterAddonMessagePrefix(ADDON_PREFIX)
 
 -- 🔧 Helper: Normalize realm name (Need to be defined before use. Can't put at the end of file..?)
 local function NormalizeRealmName(realm)
-    return realm:gsub("[%s%-']", "")
+    if realm then
+        return realm:gsub("[%s%-']", "")
+    else
+        return nil
+    end
 end
 
 -- 🔧 Helper: Normalize full name (Name-Realm) (Need to be defined before use. Can't put at the end of file..?)
 local function NormalizeFullName(fullName)
     local name, realm = strsplit("-", fullName)
-    name = name or fullName
-    realm = realm or NormalizeRealmName(GetRealmName())
-    return string.lower(string.trim(name)) .. "-" .. string.lower(string.trim(NormalizeRealmName(realm)))
+    name = name and string.lower(string.trim(name))
+    realm = realm and string.lower(string.trim(NormalizeRealmName(realm)))
+    return name .. (realm and ("-" .. realm) or "")
 end
 
 -- 🏆 **Log M+ Run**
@@ -79,8 +83,9 @@ function GuildMPlus:LogRun()
         print("|cFFAAAAAA[GuildM+] Guild Roster Members: " .. numGuildMembers .. "|r")
         for i = 1, numGuildMembers do
             local name = GetGuildRosterInfo(i)
+            local realm = GetGuildRosterInfo(i, 4) -- Get realm name (index 4)
             if name then
-                local normalizedName = NormalizeFullName(name)
+                local normalizedName = NormalizeFullName(name .. "-" .. realm) -- Explicitly include realm
                 guildRoster[normalizedName] = true
             end
         end
@@ -91,14 +96,14 @@ function GuildMPlus:LogRun()
 
     print("|cFFAAAAAA[GuildM+] Members in run:|r")
     for _, memberInfo in ipairs(members) do
-        print(" - " .. memberInfo.name)
+        print(" - " .. memberInfo.name .. " (" .. (memberInfo.realm or GetRealmName()) .. ")")
     end
 
     -- Identify guild members in the run
     local guildMembersInRun = {}
     for _, memberInfo in ipairs(members) do
-        local runMemberFullName = NormalizeFullName(memberInfo.name)
-        print("|cFFFF8000[GuildM+] Checking Run Member:|r " .. memberInfo.name .. " (Normalized: " .. runMemberFullName .. ")")
+        local runMemberFullName = NormalizeFullName(memberInfo.name .. "-" .. (memberInfo.realm or GetRealmName())) -- Include run member's realm
+        print("|cFFFF8000[GuildM+] Checking Run Member:|r " .. memberInfo.name .. " (" .. (memberInfo.realm or GetRealmName()) .. ") (Normalized: " .. runMemberFullName .. ")")
         for rosterFullName in pairs(guildRoster) do
             --print("|cFF808080[GuildM+] Comparing with Roster Member:|r " .. rosterFullName)
             if runMemberFullName == rosterFullName then
@@ -153,9 +158,10 @@ end
 function GuildMPlus:AddSampleRun()
     print("|cFF00FFFF[GuildM+] Adding sample run for testing...|r")
 
-    -- Predefined list of fake player names
-    local fakePlayerNames = {
-        UnitName("player"), "Player1", "Player2", "Player3", "Player4", "Player5", "Player6", "Player7", "Player8"
+    -- Predefined list of fake player names with optional realms
+    local fakePlayersWithRealms = {
+        "YourName-" .. GetRealmName(), "Player1-RealmA", "Player2-RealmB", "Player3-" .. GetRealmName(), "Player4-RealmC",
+        "Player5", "Player6-RealmA", "Player7", "Player8-RealmB"
     }
 
     -- Predefined list of dungeon names
@@ -192,18 +198,25 @@ function GuildMPlus:AddSampleRun()
     local sampleLevel = getRandomLevel()
     local sampleTime = getRandomTime()
     local sampleMembers = {}
-
     local used = {}
+
     while #sampleMembers < 5 do
-        local name = getRandomElement(fakePlayerNames)
-        if not used[name] then
-            table.insert(sampleMembers, name)
-            used[name] = true
+        local fullPlayerName = getRandomElement(fakePlayersWithRealms)
+        if not used[fullPlayerName] then
+            local name, realm = strsplit("-", fullPlayerName)
+            table.insert(sampleMembers, { name = name, realm = realm })
+            used[fullPlayerName] = true
         end
     end
 
     -- Generate a unique run ID
-    local runID = sampleDungeon .. "-" .. sampleLevel .. "-" .. sampleTime .. "-" .. table.concat(sampleMembers, ",")
+    local normalizedMemberNames = {}
+    for _, member in ipairs(sampleMembers) do
+        table.insert(normalizedMemberNames, NormalizeFullName(member.name .. "-" .. (member.realm or GetRealmName())))
+    end
+    table.sort(normalizedMemberNames)
+    local runID = sampleDungeon .. "-" .. sampleLevel .. "-" .. sampleTime .. "-" .. table.concat(normalizedMemberNames, ",")
+
     for _, existingRun in ipairs(GuildMPlusDB.runs) do
         if existingRun.id == runID then
             print("|cFFFFA500[GuildM+] Sample run already logged (ID: " .. runID .. ").|r")
@@ -222,7 +235,7 @@ function GuildMPlus:AddSampleRun()
         level = sampleLevel,
         time = sampleTime,
         date = getRandomDate(),
-        members = sampleMembers,
+        members = normalizedMemberNames,
         points = points
     })
 
