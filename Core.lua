@@ -37,7 +37,7 @@ local function NormalizeFullName(fullName)
     local name, realm = strsplit("-", fullName)
     name = name or fullName
     realm = realm or NormalizeRealmName(GetRealmName())
-    return name .. "-" .. NormalizeRealmName(realm)
+    return string.lower(string.trim(name)) .. "-" .. string.lower(string.trim(NormalizeRealmName(realm)))
 end
 
 -- 🏆 **Log M+ Run**
@@ -70,14 +70,23 @@ function GuildMPlus:LogRun()
     end
 
     -- Ensure the guild roster is updated
+    print("|cFFFFA500[GuildM+] Requesting guild roster...|r")
     C_GuildInfo.GuildRoster()
     local guildRoster = {}
 
-    for i = 1, GetNumGuildMembers() do
-        local name = GetGuildRosterInfo(i)
-        if name then
-            guildRoster[NormalizeFullName(name)] = true
+    local numGuildMembers = GetNumGuildMembers()
+    if numGuildMembers > 0 then
+        print("|cFFAAAAAA[GuildM+] Guild Roster Members: " .. numGuildMembers .. "|r")
+        for i = 1, numGuildMembers do
+            local name = GetGuildRosterInfo(i)
+            if name then
+                local normalizedName = NormalizeFullName(name)
+                guildRoster[normalizedName] = true
+            end
         end
+    else
+        print("|cFFFF0000[GuildM+] Warning: Guild roster is empty.|r")
+        return
     end
 
     print("|cFFAAAAAA[GuildM+] Members in run:|r")
@@ -85,23 +94,24 @@ function GuildMPlus:LogRun()
         print(" - " .. memberInfo.name)
     end
 
-    print("|cFFAAAAAA[GuildM+] Guild Roster:|r")
-    for name in pairs(guildRoster) do
-        print(" - " .. name)
-    end
-
     -- Identify guild members in the run
     local guildMembersInRun = {}
     for _, memberInfo in ipairs(members) do
-        local fullName = NormalizeFullName(memberInfo.name)
-        if guildRoster[fullName] then
-            table.insert(guildMembersInRun, fullName)
+        local runMemberFullName = NormalizeFullName(memberInfo.name)
+        print("|cFFFF8000[GuildM+] Checking Run Member:|r " .. memberInfo.name .. " (Normalized: " .. runMemberFullName .. ")")
+        for rosterFullName in pairs(guildRoster) do
+            --print("|cFF808080[GuildM+] Comparing with Roster Member:|r " .. rosterFullName)
+            if runMemberFullName == rosterFullName then
+                print("|cFF00FF00[GuildM+] Found Match:|r " .. runMemberFullName)
+                table.insert(guildMembersInRun, runMemberFullName)
+                break -- Exit inner loop once a match is found
+            end
         end
     end
 
     -- ✅ Requirement: At least 3 guild members in the run (including the player)
     if #guildMembersInRun < 3 then
-        print("|cFFFF0000[GuildM+] Not enough guild members in the run. No points awarded.|r")
+        print("|cFFFF0000[GuildM+] Not enough guild members in the run (" .. #guildMembersInRun .. "). No points awarded.|r")
         return
     end
 
