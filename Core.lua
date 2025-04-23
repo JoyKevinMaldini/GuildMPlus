@@ -21,7 +21,9 @@ GuildMPlus:HookScript("OnEvent", function(self, event, ...)
         print("|cFFFFA500[GuildM+] Last Sync:|r " .. GuildMPlusDB.lastSynced)
         C_ChatInfo.SendAddonMessage(ADDON_PREFIX, "REQUEST", "GUILD") -- Auto-sync on login
     elseif event == "CHALLENGE_MODE_COMPLETED" then
-        GuildMPlus:LogRun()
+        C_Timer.After(2, function()
+            GuildMPlus:LogRun() -- Wait 2 seconds for C_ChallengeMode.GetChallengeCompletionInfo() to be populated properly. (Might be a fix for something, might not.)
+        end)
     end
 end)
 
@@ -60,7 +62,7 @@ function GuildMPlus:LogRun()
     local time = runData.time
     local members = runData.members
 
-    -- Ensure members exist
+    -- Ensure members exist in M+ run data
     if not members or type(members) ~= "table" then
         print("|cFFFF0000[GuildM+] Error: Unable to retrieve run members.|r")
         return
@@ -78,14 +80,14 @@ function GuildMPlus:LogRun()
     C_GuildInfo.GuildRoster()
     local guildRoster = {}
 
+    -- Store all guild members names inside guildRoster array (normalized)
     local numGuildMembers = GetNumGuildMembers()
     if numGuildMembers > 0 then
         print("|cFFAAAAAA[GuildM+] Guild Roster Members: " .. numGuildMembers .. "|r")
         for i = 1, numGuildMembers do
-            local name = GetGuildRosterInfo(i)
-            local realm = GetGuildRosterInfo(i, 4) -- Get realm name (index 4)
-            if name then
-                local normalizedName = NormalizeFullName(name .. "-" .. realm) -- Explicitly include realm
+            local fullName = GetGuildRosterInfo(i)
+            if fullName then
+                local normalizedName = NormalizeFullName(fullName)
                 guildRoster[normalizedName] = true
             end
         end
@@ -94,18 +96,27 @@ function GuildMPlus:LogRun()
         return
     end
 
+    -- Print all members of the M+ run
     print("|cFFAAAAAA[GuildM+] Members in run:|r")
     for _, memberInfo in ipairs(members) do
-        print(" - " .. memberInfo.name .. " (" .. (memberInfo.realm or GetRealmName()) .. ")")
+        print(" - " .. memberInfo.name)
     end
 
-    -- Identify guild members in the run
+    -- Identify guild members in the run -> Search matches of members (M+ run) with guildRoster
     local guildMembersInRun = {}
+    local rosterPrintLimit = 3
+    local printedRosterCount = 0
+
     for _, memberInfo in ipairs(members) do
-        local runMemberFullName = NormalizeFullName(memberInfo.name .. "-" .. (memberInfo.realm or GetRealmName())) -- Include run member's realm
-        print("|cFFFF8000[GuildM+] Checking Run Member:|r " .. memberInfo.name .. " (" .. (memberInfo.realm or GetRealmName()) .. ") (Normalized: " .. runMemberFullName .. ")")
+        local runMemberFullName = NormalizeFullName(memberInfo.name)
+        print("|cFFFF8000[GuildM+] Checking Run Member:|r " .. memberInfo.name .. " (Normalized: " .. runMemberFullName .. ")")
+
         for rosterFullName in pairs(guildRoster) do
-            --print("|cFF808080[GuildM+] Comparing with Roster Member:|r " .. rosterFullName)
+            if printedRosterCount < rosterPrintLimit then
+                print("|cFF808080[GuildM+] Comparing with Roster Member:|r " .. rosterFullName)
+                printedRosterCount = printedRosterCount + 1
+            end
+
             if runMemberFullName == rosterFullName then
                 print("|cFF00FF00[GuildM+] Found Match:|r " .. runMemberFullName)
                 table.insert(guildMembersInRun, runMemberFullName)
